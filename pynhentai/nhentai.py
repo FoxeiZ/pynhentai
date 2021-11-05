@@ -1,4 +1,3 @@
-import asyncio
 import aiohttp
 from typing import Optional
 
@@ -9,14 +8,14 @@ class nhentaiException(Exception):
 
 class nhentai():
 
-    __slots__ = ('id', 'title', 'mediaId', 'tags', 'baseURL')
+    __slots__ = ('id', 'title', 'mediaId', 'tags', 'baseURL', 'response')
     def __init__(self, id: Optional[int] = None, mediaId: Optional[int] = None,
                  title: Optional[str] = None, tags: Optional[list] = None):
 
         """
         API Documentation:
 
-        :param id[int]: The ID of the gallery.
+        :param id[int]: The ID of the doujin.
         :param mediaId[int]: The ID of the media.
         :param title[str]: Search using doujin title.
         :param tags[list]: Search using tags.
@@ -24,36 +23,55 @@ class nhentai():
         """
         
         self.tags    = '+'.join(tags) if tags else None
-        self.id      = id
-        self.title   = title
-        self.mediaId = mediaId
+        self.id      = str(id)
+        self.title   = str(title)
+        self.mediaId = str(mediaId)
         self.baseURL = 'https://nhentai.net/api/'
+        self.response = None
 
     async def getByID(self):
-        return await self._request(url=self.baseURL+'gallery/'+str(self.id))
+        self.response = await self._request(url=self.baseURL+'gallery/'+self.id)
+        return self.response
 
     def getCover(self):
-        coverURL = "https://t.nhentai.net/galleries/" + str(self.mediaId) + "/cover.jpg"
+        coverURL = "https://t.nhentai.net/galleries/" + self.response['media_id'] + "/cover.jpg"
         return coverURL
 
-    async def getPageImage(self, page):
-        coverURL = "https://i.nhentai.net/galleries/" + str(self.mediaId) + "/" + str(page) + ".jpg"
-        return coverURL
+    def getPageImage(self):
+        """
+        Get a list of image URLs for the doujin.
+        """
+        pages = []
+        for i in range(1, self.response['num_pages']+1):
+            pages.append(f"https://i.nhentai.net/galleries/{self.response['media_id']}/{i}.jpg")
+        return pages
 
     async def getByTitle(self, page = 1, sort='popular'):
-        payload = {'query':'title:' + str(self.title),
+        """
+        Arguments:
+            page: Page number. (Default: 1)
+
+            sort: popular, popular-year, popular-month, popular-week, popular-today, date (Default: popular)
+        """
+        payload = {'query':'title:' + self.title,
                    'page': page,
                    'sort': sort}
         
-        response = await self._request(url=self.baseURL+'galleries/search', params=payload)
+        response = await self._request(url=self.baseURL+'galleries/search', payload=payload)
         return response["result"]
 
     async def getByTag(self, page = 1, sort='popular'):
+        """
+        Arguments:
+            page: Page number. (Default: 1)
+
+            sort: popular, popular-year, popular-month, popular-week, popular-today, date (Default: popular)
+        """
         payload = {'query':'tag:' + str(self.tags),
                    'page': page,
                    'sort': sort}
 
-        response = await self._request(url=self.baseURL+'galleries/search', params=payload)
+        response = await self._request(url=self.baseURL+'galleries/search', payload=payload)
         return response["result"]
 
     async def _request(self, url, payload: Optional[dict] = None):
@@ -63,7 +81,8 @@ class nhentai():
                     response = await resp.json()
                     return response
                 else:
-                    raise nhentaiException(f"_request({resp.status}): Failed to get respone from server")
+                    raise nhentaiException(f"_request({resp.status}): Failed to get respone from server\n{await resp.json()}")
+
 
 if __name__ == "__main__":
     pass
