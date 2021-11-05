@@ -41,10 +41,15 @@ class nhentai():
         """
         Get a list of image URLs for the doujin.
         """
-        pages = []
+        imageUrl = []
         for i in range(1, self.response['num_pages']+1):
-            pages.append(f"https://i.nhentai.net/galleries/{self.response['media_id']}/{i}.jpg")
-        return pages
+            if self.response['images']['pages'][i-1]['t'] == 'p':
+                type = 'png'
+            else:
+                type = 'jpg'
+            imageUrl.append(f"https://i.nhentai.net/galleries/{self.response['media_id']}/{i}.{type}")
+        
+        return imageUrl
 
     async def getByTitle(self, page = 1, sort='popular'):
         """
