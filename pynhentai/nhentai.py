@@ -23,12 +23,12 @@ class nhentaiContainer:
         self.scanlator = payload['scanlator']
         
         self.cover['url'] = "https://t.nhentai.net/galleries/" + self.media_id + "/cover.jpg"
-        for i in range(1, payload['num_pages']+1):
-            if self.pages[i-1]['t'] == 'p':
+        for i in range(0, payload['num_pages']):
+            if self.pages[i]['t'] == 'p':
                 type = 'png'
             else:
                 type = 'jpg'
-            self.pages[i-1]['url'] = f"https://i.nhentai.net/galleries/{self.media_id}/{i}.{type}"
+            self.pages[i]['url'] = f"https://i.nhentai.net/galleries/{self.media_id}/{i+1}.{type}"
 
     def __str__(self) -> str:
         return self.title
@@ -46,15 +46,6 @@ class nhentai:
     __slots__ = ('baseURL', 'response')
     def __init__(self):
 
-        """
-        API Documentation:
-
-        :param id[int]: The ID of the doujin.
-        :param mediaId[int]: The ID of the media.
-        :param title[str]: Search using doujin title.
-        :param tags[list]: Search using tags.
-
-        """
         self.baseURL  = 'https://nhentai.net/api/'
         self.response = None
 
@@ -62,19 +53,30 @@ class nhentai:
         self.response = await self._request(url=self.baseURL+'gallery/'+str(id))
         return nhentaiContainer(self.response)
 
-    def getCover(self, id: int):
+    async def getCover(self, id: int):
         if self.response is None:
-            return self.getByID(id).cover['url']
+            resp = await self.getByID(id=id)
+            return resp.cover['url']
+        
+        if "result" not in self.response and id == self.response['id']:
+            return nhentaiContainer(self.response).cover['url']
         else:
-            # TODO return a list of cover from nhentaiContainer
-            pass 
+            resp = await self.getByID(id=id)
+            return resp.cover['url']
 
-    def getPageImage(self):
+    async def getPageImage(self, id: int):
         """
         Get a list of image URLs for the doujin.
         """
-        # TODO: Implement this
-        pass
+        if self.response is None:
+            resp = await self.getByID(id=id)
+            return resp.pages
+        
+        if "result" not in self.response and id == self.response['id']:
+            return nhentaiContainer(self.response).pages
+        else:
+            resp = await self.getByID(id=id)
+            return resp.pages
 
     async def searchByTitle(self, title: str = None, page = 1, sort='popular'):
         """
@@ -88,7 +90,7 @@ class nhentai:
         payload = {'query':'title:' + title,
                    'page': page,
                    'sort': sort}
-        
+
         response = await self._request(url=self.baseURL+'galleries/search', payload=payload)
 
         if response['result'] == 0:
@@ -110,7 +112,7 @@ class nhentai:
 
             sort[str]: popular, popular-year, popular-month, popular-week, popular-today, date (Default: popular)
         """
-        tags = '+'.join(tags) if tags else None
+        tags = '+'.join(tags) # Convert list to string
         payload = {'query':'tag:' + str(tags),
                    'page': page,
                    'sort': sort}
@@ -126,6 +128,16 @@ class nhentai:
             result = nhentaiContainer(response['result'])
 
         return result
+
+    async def searchByPayload(self, payloadType, **payload):
+        """
+        Arguments:
+            payloadType[str]: Type of payload. (ex: search)
+            payload[dict]: Payload.
+
+        """
+        response = await self._request(url=self.baseURL+'galleries/'+payloadType, payload=payload)
+        return response
 
     async def _request(self, url, payload: Optional[dict] = None):
         async with aiohttp.ClientSession() as session:
