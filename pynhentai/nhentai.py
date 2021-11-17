@@ -21,7 +21,7 @@ class nhentaiContainer:
         self.cover     = payload['images']['cover']
         self.thumbnail = payload['images']['thumbnail']
         self.scanlator = payload['scanlator']
-        
+
         self.cover['url'] = "https://t.nhentai.net/galleries/" + self.media_id + "/cover.jpg"
         for i in range(0, payload['num_pages']):
             if self.pages[i]['t'] == 'p':
@@ -50,14 +50,14 @@ class nhentai:
         self.response = None
 
     async def getByID(self, id: int = None):
-        self.response = await self._request(url=self.baseURL+'gallery/'+str(id))
+        self.response = await self._request(url=self.baseURL + 'gallery/' + str(id))
         return nhentaiContainer(self.response)
 
     async def getCover(self, id: int):
         if self.response is None:
             resp = await self.getByID(id=id)
             return resp.cover['url']
-        
+
         if "result" not in self.response and id == self.response['id']:
             return nhentaiContainer(self.response).cover['url']
         else:
@@ -71,7 +71,7 @@ class nhentai:
         if self.response is None:
             resp = await self.getByID(id=id)
             return resp.pages
-        
+
         if "result" not in self.response and id == self.response['id']:
             return nhentaiContainer(self.response).pages
         else:
@@ -87,11 +87,11 @@ class nhentai:
 
             sort[str]: popular, popular-year, popular-month, popular-week, popular-today, date (Default: popular)
         """
-        payload = {'query':'title:' + title,
+        payload = {'query': 'title:' + title,
                    'page': page,
                    'sort': sort}
 
-        response = await self._request(url=self.baseURL+'galleries/search', payload=payload)
+        response = await self._request(url=self.baseURL + 'galleries/search', payload=payload)
 
         if response['result'] == 0:
             raise nhentaiException(f"No results found for {title}")
@@ -113,12 +113,12 @@ class nhentai:
             sort[str]: popular, popular-year, popular-month, popular-week, popular-today, date (Default: popular)
         """
         tags = '+'.join(tags) # Convert list to string
-        payload = {'query':'tag:' + str(tags),
+        payload = {'query': 'tag:' + str(tags),
                    'page': page,
                    'sort': sort}
 
-        response = await self._request(url=self.baseURL+'galleries/search', payload=payload)
-        
+        response = await self._request(url=self.baseURL + 'galleries/search', payload=payload)
+
         if response['result'] == 0:
             raise nhentaiException(f"No results found for {tags}")
 
@@ -136,7 +136,7 @@ class nhentai:
             payload[dict]: Payload.
 
         """
-        response = await self._request(url=self.baseURL+'galleries/'+payloadType, payload=payload)
+        response = await self._request(url=self.baseURL + 'galleries/' + payloadType, payload=payload)
         return response
 
     async def _request(self, url, payload: Optional[dict] = None):
