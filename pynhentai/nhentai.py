@@ -9,10 +9,10 @@ class nhentaiException(Exception):
 
 class nhentaiContainer:
 
-    __slots__ = ('id', 'tags', 'title', 'title_jpn', 'title_prt', 'media_id', 'images', 'pages', 'cover', 'scanlator', 'thumbnail')
+    __slots__ = ('id', 'tags', 'title', 'title_jpn', 'title_prt', 'media_id', 'images', 'pages',
+                 'cover', 'scanlator', 'thumbnail', 'artists')
     def __init__(self, payload: dict) -> None:
         self.id        = payload['id']
-        self.tags      = payload['tags']
         self.title     = payload['title']['english']
         self.title_jpn = payload['title']['japanese'] # Sometime this is empty
         self.title_prt = payload['title']['pretty']   # Short title of the doujin
@@ -21,14 +21,23 @@ class nhentaiContainer:
         self.cover     = payload['images']['cover']
         self.thumbnail = payload['images']['thumbnail']
         self.scanlator = payload['scanlator']
+        self.tags      = []
+        self.artists   = []
 
         self.cover['url'] = "https://t.nhentai.net/galleries/" + self.media_id + "/cover.jpg"
+
         for i in range(0, payload['num_pages']):
             if self.pages[i]['t'] == 'p':
                 type = 'png'
             else:
                 type = 'jpg'
             self.pages[i]['url'] = f"https://i.nhentai.net/galleries/{self.media_id}/{i+1}.{type}"
+
+        for tag in payload['tags']:
+            if tag['type'] == 'artist':
+                self.artists.append(tag)
+            else:
+                self.tags.append(tag)
 
     def __str__(self) -> str:
         return self.title
