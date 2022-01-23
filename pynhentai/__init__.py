@@ -1,4 +1,4 @@
-from pynhentai.nhentai import *
+from pynhentai.nhentai import nhentai
 from sys import platform
 import asyncio
 
